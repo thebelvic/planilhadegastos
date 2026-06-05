@@ -263,6 +263,30 @@ input,select,textarea,button{font-family:'DM Sans',sans-serif;}
 </div>
 </div>
 
+<!-- CATEGORIAS MODAL -->
+<div class="ov" id="catsOv">
+<div class="modal" style="max-width:420px;">
+  <div class="modal-hdr">
+    <div class="modal-ttl">⚙️ Categorias</div>
+    <button class="modal-close" onclick="fecharCats()">✕</button>
+  </div>
+  <div class="modal-body">
+    <p style="font-size:12px;color:var(--mu);">Adicione, edite ou remova categorias. A ordem pode ser arrastada.</p>
+    <div id="catsList" style="display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;"></div>
+    <!-- nova categoria -->
+    <div style="display:flex;gap:8px;align-items:center;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:10px;">
+      <input class="finp" id="nc-ico" placeholder="🏷️" style="width:52px;text-align:center;font-size:18px;padding:6px;">
+      <input class="finp" id="nc-nome" placeholder="Nome da categoria…" style="flex:1;">
+      <button onclick="addCat()" style="background:var(--grn);color:#0a0e1a;border:none;border-radius:6px;padding:8px 14px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;">＋ Adicionar</button>
+    </div>
+    <div class="modal-btns">
+      <button class="mbtn" onclick="resetCats()" style="color:var(--red);border-color:var(--red);">↺ Restaurar padrão</button>
+      <button class="mbtn ok" onclick="fecharCats()">✓ Feito</button>
+    </div>
+  </div>
+</div>
+</div>
+
 <div id="fbSync"></div>
 
 <script>
@@ -538,6 +562,53 @@ function executarCopia(){
   dados[key]=[...dados[key],...novas];
   save();fecharCopy();render();
   alert(`${novas.length} despesa(s) copiada(s) para ${MESES[mes]} ${ano}!`);
+}
+
+// ── CATEGORIES MANAGEMENT ─────────────────────────────────────
+function abrirCats(){
+  renderCatsList();
+  document.getElementById('catsOv').classList.add('open');
+}
+function fecharCats(){
+  document.getElementById('catsOv').classList.remove('open');
+  render(); // re-render with updated cats
+}
+function renderCatsList(){
+  const el=document.getElementById('catsList');
+  if(!cats.length){ el.innerHTML='<div style="text-align:center;color:var(--mu);padding:12px;">Nenhuma categoria.</div>'; return; }
+  el.innerHTML=cats.map((c,i)=>`
+    <div style="display:flex;align-items:center;gap:8px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;">
+      <input value="${esc(c.ico)}" oninput="updCat(${i},'ico',this.value)" style="width:44px;text-align:center;font-size:16px;background:var(--s3);border:1px solid var(--bd);border-radius:6px;padding:4px;color:var(--tx);outline:none;">
+      <input value="${esc(c.nome)}" oninput="updCat(${i},'nome',this.value)" style="flex:1;background:var(--s3);border:1px solid var(--bd);border-radius:6px;padding:6px 8px;font-size:13px;color:var(--tx);outline:none;">
+      <button onclick="moveCat(${i},-1)" style="background:var(--s3);border:1px solid var(--bd);border-radius:5px;width:26px;height:26px;cursor:pointer;color:var(--mu);font-size:12px;" ${i===0?'disabled':''}>↑</button>
+      <button onclick="moveCat(${i},1)" style="background:var(--s3);border:1px solid var(--bd);border-radius:5px;width:26px;height:26px;cursor:pointer;color:var(--mu);font-size:12px;" ${i===cats.length-1?'disabled':''}>↓</button>
+      <button onclick="delCat(${i})" style="background:rgba(255,77,109,.1);border:1px solid var(--red);border-radius:5px;width:26px;height:26px;cursor:pointer;color:var(--red);font-size:12px;">✕</button>
+    </div>`).join('');
+}
+function updCat(i,key,val){ cats[i][key]=val; saveCats(); }
+function moveCat(i,dir){
+  const j=i+dir;
+  if(j<0||j>=cats.length)return;
+  [cats[i],cats[j]]=[cats[j],cats[i]];
+  saveCats(); renderCatsList();
+}
+function delCat(i){
+  if(cats.length<=1){ alert('Mantenha pelo menos uma categoria.'); return; }
+  if(!confirm(`Remover "${cats[i].nome}"?`)) return;
+  cats.splice(i,1); saveCats(); renderCatsList();
+}
+function addCat(){
+  const ico=document.getElementById('nc-ico').value.trim()||'📦';
+  const nome=document.getElementById('nc-nome').value.trim();
+  if(!nome){ alert('Digite o nome da categoria.'); return; }
+  cats.push({nome,ico}); saveCats();
+  document.getElementById('nc-ico').value='';
+  document.getElementById('nc-nome').value='';
+  renderCatsList();
+}
+function resetCats(){
+  if(!confirm('Restaurar categorias padrão?')) return;
+  cats=[...CATS_DEFAULT]; saveCats(); renderCatsList();
 }
 
 // ── INIT ──────────────────────────────────────────────────────
